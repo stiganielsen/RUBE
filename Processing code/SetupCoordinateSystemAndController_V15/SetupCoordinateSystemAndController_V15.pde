@@ -64,7 +64,7 @@ void setup() {
   size (1000, 800);
   frameRate(30);
   cp5 = new ControlP5(this);
-  cf = addControlFrame("extra", 400, 800);
+  cf = new ControlFrame("extra", this, 400, 800);
 
   myPortIn = new Serial(this, "COM51", 9600);
   myPortOut =new Serial(this, "COM36", 9600);

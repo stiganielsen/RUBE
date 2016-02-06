@@ -1,18 +1,3 @@
-
-ControlFrame addControlFrame(String theName, int theWidth, int theHeight) {
-  Frame f = new Frame(theName);
-  ControlFrame p = new ControlFrame(this, theWidth, theHeight);
-  f.add(p);
-  p.init();
-  f.setTitle(theName);
-  f.setSize(p.w, p.h);
-  f.setLocation(5, 5);
-  f.setResizable(false);
-  f.setVisible(true);
-  return p;
-}
-
-
 // the ControlFrame class extends PApplet, so we 
 // are creating a new processing applet inside a
 // new frame with a controlP5 object loaded
@@ -26,8 +11,33 @@ public class ControlFrame extends PApplet {
   Textlabel explainF;
   Textlabel explainG;
   int abc = 100;
+  
+    public ControlFrame(String _name, PApplet _parent, int _w, int _h) {
+    super();   
+    parent = _parent;
+    w=_w;
+    h=_h;
+    PApplet.runSketch(new String[]{this.getClass().getName()}, this);
+    
+    /*Frame f = new Frame(theName);
+    ControlFrame p = new ControlFrame(this, theWidth, theHeight);
+    f.add(p);
+    p.init();
+    f.setTitle(theName);
+    f.setSize(p.w, p.h);
+    f.setLocation(5, 5);
+    f.setResizable(false);
+    f.setVisible(true);
+    return p;
+    */
+  }
+  
+  public void settings() {
+      size(w, h);
+  }
+  
   public void setup() {
-    size(w, h);
+    settings();
     frameRate(25);
     
     int space=0;

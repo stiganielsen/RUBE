@@ -106,9 +106,9 @@ void deltaXyzDeltaLine(float* xyzRube, float* dXyzDt, float* resultVector){
 		}
 
 		//project cartesian xyz velocity on line,
-		float lineLength = sqrt(line[0]^2 + line[1]^2 + line[2]^2);
+		float lineLength = sqrt(line[0]*line[0] + line[1]*line[1] + line[2]*line[2]);
 		for( int j = 0; j < 3 ; ++j){//for each row of matrix
-			float deltaXyzDeltaLineMatrix[i][j] = line[j]/lineLength;
+			deltaXyzDeltaLineMatrix[i][j] = line[j]/lineLength;
 		}
 	}
 

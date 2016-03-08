@@ -80,9 +80,6 @@ void setup(){
 	//TODO estimate payload weight
 	//TODO multiple ways of calibrating?
 
-	//setup controller
-	setAllPIDs();
-
 	//Tension slack on lines
 	while(isButtonAPressed() || isButtonBPressed() || isButtonCPressed()){
 		if(isButtonAPressed()){
@@ -103,14 +100,14 @@ void setup(){
 			setMotorPwm(2, -0.2);
 		}
 	}
-	setMotorPwms(0, 0, 0);
+	stopMotors();
 
 	//TODO calibration xyz -> length OR length -> xyz
 	//TODO calibrate xyz with distance sensor
 	line2xyzRube(lineLength,  xyzRube);
 	//CalculateLineOPQ(xyzRube);
 
-	getLineLengths(lineLength);
+	//getLineLengths(lineLength);
 
 	encA.write(lineLength[0]*2);
 	encB.write(lineLength[1]*2);
@@ -226,19 +223,19 @@ void loop(){
 	lastLoopStart = loopStart;
 }
 
-void  setAllPIDs(){
-	controllerA.SetTuningsUp(Pu,Iu,Du);
-	controllerB.SetTuningsUp(Pu,Iu,Du);
-	controllerC.SetTuningsUp(Pu,Iu,Du);
-
+//void  setAllPIDs(){
+//	controllerA.SetTuningsUp(Pu,Iu,Du);
+//	controllerB.SetTuningsUp(Pu,Iu,Du);
+//	controllerC.SetTuningsUp(Pu,Iu,Du);
+//
 //	controllerA.SetTuningsDown(Pd,Id,Dd);
 //	controllerB.SetTuningsDown(Pd,Id,Dd);
 //	controllerC.SetTuningsDown(Pd,Id,Dd);
-
-	controllerA.SetOutputLimits(55,-5);
-	controllerB.SetOutputLimits(55,-5);
-	controllerC.SetOutputLimits(55,-5);
-	controllerA.SetSampleTime(10);
-	controllerB.SetSampleTime(10);
-	controllerC.SetSampleTime(10);
-}
+//
+//	controllerA.SetOutputLimits(55,-5);
+//	controllerB.SetOutputLimits(55,-5);
+//	controllerC.SetOutputLimits(55,-5);
+//	controllerA.SetSampleTime(10);
+//	controllerB.SetSampleTime(10);
+//	controllerC.SetSampleTime(10);
+//}

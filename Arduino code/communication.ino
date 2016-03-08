@@ -94,13 +94,13 @@ void serialEvent(){
 			Pu = float(parseInt32());Pu=Pu/1000;
 			Iu = float(parseInt32());Iu=Iu/1000;
 			Du = float(parseInt32());Du=Du/1000;
-							setAllPIDs();
+//							setAllPIDs();
 			break;
 		case 'd': //pid-parameters down
-			Pd = float(parseInt32());Pd=Pd/1000;
-			Id = float(parseInt32());Pd=Pd/1000;
-			Dd = float(parseInt32());Pd=Pd/1000;
-							setAllPIDs();
+//			Pd = float(parseInt32());Pd=Pd/1000;
+//			Id = float(parseInt32());Pd=Pd/1000;
+//			Dd = float(parseInt32());Pd=Pd/1000;
+//							setAllPIDs();
 			break;
 		case 's':
 			stopCmd=float(parseInt32());

@@ -61,13 +61,16 @@ void setup() {
   textFont(metaBold);
   textSize(12);
 
-  size (1000, 800);
+  surface.setResizable(true);
+  surface.setSize(1000, 800);
   frameRate(30);
   cp5 = new ControlP5(this);
   cf = new ControlFrame("extra", this, 400, 800);
+  cf.GUIsetup();
 
-  myPortIn = new Serial(this, "COM51", 9600);
-  myPortOut =new Serial(this, "COM36", 9600);
+  myPortIn = new Serial(this, "COM8", 9600);
+  myPortOut= myPortIn;
+  //myPortOut =new Serial(this, "COM8", 9600);
   pointO = new PVector(0, 0, heightMount);
   pointP = new PVector(distOP,0, heightMount); 
   //finding the XY of point Q

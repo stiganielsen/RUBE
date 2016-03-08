@@ -1,0 +1,25 @@
+each command ends with newline caracter: "\n" or carriage return "\r"
+lines starting with % are ignored.
+space and tab is optional and ignored.
+each number has to be a signed integer.
+buffered actions:
+"Cf X123 Y123 Z123 S123": buffer waypoint with specified XYZ coordinates in mm at speed S mm/s, fine precision (used in sharp bends).
+"Cr X123 Y123 Z123 S123": buffer waypoint with specified XYZ coordinates in mm at speed S mm/s, rough precision (used where it's important to maintain velocity rather than reaching a certain point, such as an arc made of multiple waypoints).
+"P T123": pause for T ms.
+"Gr1": activate/close gripper/tool
+"Gr0": deactivate/open gripper/tool
+
+non-buffered: 
+	actions:
+"Vc X123 Y123 Z123 T123": maintain cartesian velocity XYZ mm/s for time T ms.
+"Vl A123 B123 C123 T123": maintain velocity ABC mm/s for time T ms along lines, positive value meaning retracting lines.
+"E": emergency stop! clear buffered waypoints, turn off motors(rube will fall to the ground)
+"S": stop what you are doing and maintain your current position
+"C": continue parsing waypoints
+"R": reset waypoints,
+	calibration:
+"Cal A123 B123 C123" : set length of each line to ABC
+"Acc 123": set max acceleration
+"Pp P123 I123 D123": set position controller parameters, scaled with 0.01 internally ( i.e. sending P492 will set P= 4.92)
+"Pv P123 I123 D123": set velocity controller parameters, scaled with 0.01 internally ( i.e. sending P492 will set P= 4.92)
+"Ff 123": set estimated friction force to 123N.

@@ -1,39 +1,50 @@
 #include "Arduino.h"
 
-//____________________________MeasureValues
+// -------- measured values --------
 //HEIGHT(s)
-float height=3166;//16000; //currently the rube must be mounted so that the points are in the same height.
+float heightO=3166;//16000;
+float heightP = heightO;//currently the rube must be mounted so that the points are in the same height.
+float heightQ = heightO;//currently the rube must be mounted so that the points are in the same height.
 //DISTANCES BETWEEN TOP PTS
 float distOP= 3850;//ljusg15570;//crf628;//origo -> første  (o) O------P  (x)
 float distPQ= 3752;//ljusg15980;//crf600;//første til anden      \  R /
 float distOQ= 3300;//ljusg25640;//crf437;//anden til origo         \  /
-//DISTANCES TO RUBE                                           (y)   Q
-float distOR =2600;//20750;
-float distPR =2870;//16450; //1444 er højden fra gulv sjuss
-float distQR =2456;//21520;
+// 						                                           (y)    Q
 
+// -------- constants and variables generated during runtime --------
 float deltaXyzDeltaLineMatrix[3][3];
 float lineAttachment[3][3];
 
 void initKinematics(void){
 	//first finding the XY position of point Q
-	float r1=distOQ;
-	float r2=distPQ;
-	float d=distOP;
-	float Qx=((d*d)-(r2*r2)+(r1*r1))/(2*d);
-	float Qy=((1/d) * sqrt((-d+r2-r1)*(-d-r2+r1)*(-d+r2+r1)*(d+r2+r1)))/2;
+//	float r1=distOQ;
+//	float r2=distPQ;
+//	float d=distOP;
+//	float Qx=((d*d)-(r2*r2)+(r1*r1))/(2*d); //TODO verify
+//	float Qy=((1/d) * sqrt((-d+r2-r1)*(-d-r2+r1)*(-d+r2+r1)*(d+r2+r1)))/2; //TODO verify
+
+	//law of cosines:
+	float angleQOP = acos((distOP*distOP + distOQ*distOQ - distPQ*distPQ)/(2*distOP*distOQ));
+	float angleQOY = M_PI/2 - angleQOP;
 
 	lineAttachment[0][0] = 0;
 	lineAttachment[0][1] = 0;
-	lineAttachment[0][2] = height;
+	lineAttachment[0][2] = heightO;
 
 	lineAttachment[1][0] = 0;
 	lineAttachment[1][1] = distOP;
-	lineAttachment[1][2] = height;
+	lineAttachment[1][2] = heightO;
 
-	lineAttachment[2][0] = Qx;
-	lineAttachment[2][1] = Qy;
-	lineAttachment[2][2] = height;
+	lineAttachment[2][0] = sin(angleQOY)*distOQ;
+	lineAttachment[2][1] = cos(distOQ)*distOQ;
+	lineAttachment[2][2] = heightO;
+}
+
+/*
+ * convert a force in xyz to equivalent force in each line
+ */
+void xyzForce2lineForce(float* xyzRube, float* xyzForce, float* resultVector){
+	deltaXyzDeltaLine(xyzRube, xyzForce, resultVector); //TODO check if correct
 }
 
 //TODO
@@ -46,12 +57,7 @@ void initKinematics(void){
 void deltaLineDeltaXyz(float* xyzRube, float* dLengthDt, float* resultVector){
 
 }
-/*
- * convert a force in xyz to equivalent force in each line
- */
-void xyzForce2lineForce(float* xyzRube, float* xyzForce, float* resultVector){
-	deltaXyzDeltaLine(xyzRube, xyzForce, resultVector); //TODO check if correct
-}
+
 /*
  * inverse of deltaLineDeltaXyz
  * [3x1]   =      [3 x 3]         * [3 x 1]
@@ -69,7 +75,7 @@ void deltaXyzDeltaLine(float* xyzRube, float* dXyzDt, float* resultVector){
 		}
 
 		//project cartesian xyz velocity on line,
-		float lineLength = sqrt(line[0]*line[0] + line[1]*line[1] + line[2]*line[2]);
+		float lineLength = norm(line);
 		for( int j = 0; j < 3 ; ++j){//for each row of matrix
 			deltaXyzDeltaLineMatrix[i][j] = line[j]/lineLength;
 		}

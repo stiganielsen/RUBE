@@ -102,6 +102,10 @@ void setup(){
 	}
 	stopMotors();
 
+//	//DISTANCES TO RUBE                                        (y)    Q
+//	float distOR =2600;//20750;
+//	float distPR =2870;//16450; //1444 er højden fra gulv sjuss
+//	float distQR =2456;//21520;
 	//TODO calibrate xyz with distance sensor
 	//assuming rube is centered and on the floor, find average x and y of lineAttachements
 	float xyzRubeInit[3] = {};

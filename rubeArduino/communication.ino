@@ -11,7 +11,7 @@ extern int lineO;
 extern int lineP;
 extern int lineQ;
 
-extern float height;
+extern float heightO;
 extern float distOP;
 extern float distPQ;
 extern float distOQ;
@@ -106,7 +106,7 @@ void serialEvent(){
 			stopCmd=float(parseInt32());
 			break;
 		case 'k':
-			height= float(parseInt32());//16000; //currently the rube must be mounted so that the points are in the same height.
+			heightO= float(parseInt32());//16000; //currently the rube must be mounted so that the points are in the same height.
 			distOP= float(parseInt32());
 			distPQ= float(parseInt32());
 			distOQ= float(parseInt32());

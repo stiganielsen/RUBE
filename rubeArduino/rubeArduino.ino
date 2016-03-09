@@ -102,23 +102,30 @@ void setup(){
 	}
 	stopMotors();
 
-	//TODO calibration xyz -> length OR length -> xyz
 	//TODO calibrate xyz with distance sensor
-	line2xyzRube(lineLength,  xyzRube);
-	//CalculateLineOPQ(xyzRube);
+	//assuming rube is centered and on the floor, find average x and y of lineAttachements
+	float xyzRubeInit[3] = {};
+	xyzRube[0] = (lineAttachment[0][0] + lineAttachment[1][0] + lineAttachment[2][0])/3;
+	xyzRube[1] = (lineAttachment[0][1] + lineAttachment[1][1] + lineAttachment[2][1])/3;
+	xyzRube[2] = 0;
 
-	//getLineLengths(lineLength);
+	xyzRube2line(xyzRube,  lineLength);
 
-	encA.write(lineLength[0]*2);
-	encB.write(lineLength[1]*2);
-	encC.write(lineLength[2]*2);
+	encA.write(lineLength[0]);
+	encB.write(lineLength[1]);
+	encC.write(lineLength[2]);
 
-	//	Serial.print("cal to Qx:"); Serial.println(Qx);
-	//	Serial.print("cal to Qy:"); Serial.println(Qy);
+	printState();
+}
 
-	Serial.print("cal to Rx:"); Serial.println(xyzRube[0]);
-	Serial.print("cal to Ry:"); Serial.println(xyzRube[1]);
-	Serial.println("cal to Rz"); Serial.println(xyzRube[2]);
+void printState(void){
+	Serial.print("rube X:"); Serial.print(xyzRube[0]);
+	Serial.print(" Y:"); Serial.print(xyzRube[1]);
+	Serial.print(" Z:"); Serial.println(xyzRube[2]);
+
+	Serial.print("line A:"); Serial.print(lineLength[0]);
+	Serial.print(" B:"); Serial.print(lineLength[1]);
+	Serial.print(" C:"); Serial.println(lineLength[2]);
 }
 
 

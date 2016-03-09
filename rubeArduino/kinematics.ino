@@ -1,7 +1,7 @@
 #include "Arduino.h"
 
 //____________________________MeasureValues
- //HEIGHT(s)
+//HEIGHT(s)
 float height=3166;//16000; //currently the rube must be mounted so that the points are in the same height.
 //DISTANCES BETWEEN TOP PTS
 float distOP= 3850;//ljusg15570;//crf628;//origo -> første  (o) O------P  (x)
@@ -11,23 +11,8 @@ float distOQ= 3300;//ljusg25640;//crf437;//anden til origo         \  /
 float distOR =2600;//20750;
 float distPR =2870;//16450; //1444 er højden fra gulv sjuss
 float distQR =2456;//21520;
-//____________________________MeasureValues
-int lineO=distOR;
-int lineP=distPR;
-int lineQ=distQR;
-long Qx,Qy,Qz;
 
-float gox=0;
-float goy=0;
-float goz=0;
-
-int Rx=0;
-int Ry=0;
-int Rz=0;
-
-//-------vilse-style-------
 float deltaXyzDeltaLineMatrix[3][3];
-
 float lineAttachment[3][3];
 
 void initKinematics(void){
@@ -35,42 +20,20 @@ void initKinematics(void){
 	float r1=distOQ;
 	float r2=distPQ;
 	float d=distOP;
-	Qx=((d*d)-(r2*r2)+(r1*r1))/(2*d);
-	Qy=((1/d) * sqrt((-d+r2-r1)*(-d-r2+r1)*(-d+r2+r1)*(d+r2+r1)))/2;
-	Qz =height;
-	//now finding the pointR based on the three other points OPQ and the distances from these to pointR
-	r1=distOR;
-	r2=distPR;
-	int r3=distQR;
-	d=distOP;
-	float i=Qx; //pointQ.x
-	float j=Qy; //pointQ.y
+	float Qx=((d*d)-(r2*r2)+(r1*r1))/(2*d);
+	float Qy=((1/d) * sqrt((-d+r2-r1)*(-d-r2+r1)*(-d+r2+r1)*(d+r2+r1)))/2;
 
-	Rx=int(( ( (r1*r1) - (r2*r2) + (d*d) ) /  (2*d) ));
-	Ry=int(( ( (r1*r1) - (r3*r3) + (i*i) + (j*j) ) / (2*j) ) - ( (i/j)*Rx )); // ((r1*r1)-(r3*r3)-(xc*xc)+( (xc-i)*(xc-i) )+(j*j) / (2*j));
-	Rz=int( sqrt( (r1*r1) - (Rx*Rx) - (Ry*Ry) ))  ;
-	Rz=height-Rz;
+	lineAttachment[0][0] = 0;
+	lineAttachment[0][1] = 0;
+	lineAttachment[0][2] = height;
 
-	//-------vilse-style-------
-	for( int i = 0; i < 3 ; ++i){ // for each line
-		for( int j = 0; j < 3 ; ++j){//for xyz
-			lineAttachment[i][j] = 0; //TODO
-		}
-	}
+	lineAttachment[1][0] = 0;
+	lineAttachment[1][1] = distOP;
+	lineAttachment[1][2] = height;
 
-}
-
-void CalculateLineOPQ(float* posPointer){
-	gox=posPointer[0];
-	goy=posPointer[1];
-	goz=posPointer[2];
-	float d= distOP;
-	float i= Qx;
-	float j= Qy;
-	float h=height;
-	lineO =int(sqrt((gox*gox)+(goy*goy)+((goz-h)*(goz-h))));
-	lineP =int(sqrt(((gox-d)*(gox-d))+(goy*goy)+((goz-h)*(goz-h)))) ;
-	lineQ =int(sqrt(((gox-i)*(gox-i))+((goy-j)*(goy-j))+((goz-h)*(goz-h)))) ;
+	lineAttachment[2][0] = Qx;
+	lineAttachment[2][1] = Qy;
+	lineAttachment[2][2] = height;
 }
 
 //TODO
@@ -120,9 +83,110 @@ void deltaXyzDeltaLine(float* xyzRube, float* dXyzDt, float* resultVector){
 	}
 }
 
-//TODO
-void line2xyzRube(float* lineLengths,  float* resultVector){
-	resultVector[0] = 0;
-	resultVector[1] = 0;
-	resultVector[2] = 0;
+void xyzRube2line(float* xyzRube,  float* resultVector){
+	float xyzLine[3];
+	for( int i = 0; i < 3 ; ++i){ // for each line
+		for( int j = 0; j < 3 ; ++j){//for xyz
+			xyzLine[j] = lineAttachment[i][j] - xyzRube[j];
+		}
+		resultVector[i] = norm(xyzLine);
+	}
+}
+
+void line2xyzRube(float* lineLength,  float* resultVector){
+	float lineAttachment1Temp[3] = {lineAttachment[0][0],lineAttachment[0][1],lineAttachment[0][2]};
+	float lineAttachment2Temp[3] = {lineAttachment[1][0],lineAttachment[1][1],lineAttachment[1][2]};
+	float lineAttachment3Temp[3] = {lineAttachment[2][0],lineAttachment[2][1],lineAttachment[2][2]};
+
+	float xyzRubePossibility1[3];
+	float xyzRubePossibility2[3];
+
+	threeCirclesIntersection(lineAttachment1Temp, lineAttachment2Temp, lineAttachment3Temp, lineLength[0], lineLength[1], lineLength[2], xyzRubePossibility1, xyzRubePossibility2);
+	if (xyzRubePossibility1[2] < xyzRubePossibility2[2]){
+		resultVector[0] = xyzRubePossibility1[0];
+		resultVector[1] = xyzRubePossibility1[1];
+		resultVector[2] = xyzRubePossibility1[2];
+	}else{
+		resultVector[0] = xyzRubePossibility2[0];
+		resultVector[1] = xyzRubePossibility2[1];
+		resultVector[2] = xyzRubePossibility2[2];
+	}
+}
+
+/* Find the intersection of three spheres
+ * A,B,C are the centers, r1,r2,r3 are the radii
+ * Implementaton based on Wikipedia Trilateration article.
+ * http://stackoverflow.com/questions/1406375/finding-intersection-points-between-3-spheres
+ * returns the two intersections points in resultVector1 & resultVector2
+ */
+int threeCirclesIntersection(float* A, float* B, float* C, float r1, float r2, float r3, float* resultVector1, float* resultVector2){
+	float AB[3];
+	float e_x[3];
+	float CA[3];
+	float temp3[3];
+	float e_y[3];
+	float e_z[3];
+
+	AB[0] = B[0]-A[0];
+	AB[1] = B[1]-A[1];
+	AB[2] = B[2]-A[2];
+
+	float absAB = norm(AB);
+
+	e_x[0] = AB[0]/absAB;
+	e_x[1] = AB[1]/absAB;
+	e_x[2] = AB[2]/absAB;
+
+	CA[0] = C[0]-A[0];
+	CA[1] = C[1]-A[1];
+	CA[2] = C[2]-A[2];
+
+	float i = dotProduct(e_x,CA);
+
+	temp3[0] = CA[0] - i*e_x[0];
+	temp3[1] = CA[1] - i*e_x[1];
+	temp3[2] = CA[2] - i*e_x[2];
+
+	float absTemp3 = norm(temp3);
+
+	e_y[0] = temp3[0]/absTemp3;
+	e_y[1] = temp3[1]/absTemp3;
+	e_y[2] = temp3[2]/absTemp3;
+
+	crossProduct(e_x,e_y, e_z);
+
+	float d = norm(AB);
+
+	float j = dotProduct(e_y,CA);
+
+	float x = (r1*r1 - r2*r2 + d*d) / (2*d);
+	float y = (r1*r1 - r3*r3 -2*i*x + i*i + j*j) / (2*j);
+	float temp4 = r1*r1 - x*x - y*y;
+	if (temp4 < 0){
+		return 1; //The three spheres do not intersect!
+	}else{
+		float z = sqrt(temp4);
+		resultVector1[0] = A[0] + x*e_x[0] + y*e_y[0] + z*e_z[0];
+		resultVector1[1] = A[1] + x*e_x[1] + y*e_y[1] + z*e_z[1];
+		resultVector1[2] = A[2] + x*e_x[2] + y*e_y[2] + z*e_z[2];
+
+		resultVector2[0] = A[0] + x*e_x[0] + y*e_y[0] - z*e_z[0];
+		resultVector2[1] = A[1] + x*e_x[1] + y*e_y[1] - z*e_z[1];
+		resultVector2[2] = A[2] + x*e_x[2] + y*e_y[2] - z*e_z[2];
+		return 0;
+	}
+}
+
+float norm(float* a){
+	return sqrt(a[1]*a[1] + a[2]*a[2] + a[3]*a[3]);
+}
+
+float dotProduct(float* a, float* b){
+	return a[1]*b[1] + a[2]*b[2] + a[3]*b[3];
+}
+
+void crossProduct(float* a, float* b, float* resultVector){
+	resultVector[1] = a[2]*b[3]-a[3]*b[2];
+	resultVector[2] = a[3]*b[1]-a[1]*b[3];
+	resultVector[3] = a[1]*b[2]-a[2]*b[1];
 }

@@ -3,8 +3,8 @@
 // -------- measured values --------
 //HEIGHT(s)
 float heightO=3166;//16000;
-float heightP = heightO;//currently the rube must be mounted so that the points are in the same height.
-float heightQ = heightO;//currently the rube must be mounted so that the points are in the same height.
+float heightP = 3166;
+float heightQ = 3166;
 //DISTANCES BETWEEN TOP PTS
 float distOP= 3850;//ljusg15570;//crf628;//origo -> første  (o) O------P  (x)
 float distPQ= 3752;//ljusg15980;//crf600;//første til anden      \  R /
@@ -16,15 +16,16 @@ float deltaXyzDeltaLineMatrix[3][3];
 float lineAttachment[3][3];
 
 void initKinematics(void){
-	//first finding the XY position of point Q
-//	float r1=distOQ;
-//	float r2=distPQ;
-//	float d=distOP;
-//	float Qx=((d*d)-(r2*r2)+(r1*r1))/(2*d); //TODO verify
-//	float Qy=((1/d) * sqrt((-d+r2-r1)*(-d-r2+r1)*(-d+r2+r1)*(d+r2+r1)))/2; //TODO verify
+	//project distOP, distPQ, distOQ onto x-y-plane using pythagoras theorem
+	float heightDiffOP = heightO - heightP;
+	float heightDiffOQ = heightO - heightQ;
+	float heightDiffPQ = heightP - heightQ;
+	float distOPproj = sqrt(distOP*distOP - heightDiffOP*heightDiffOP);
+	float distOQproj = sqrt(distOQ*distOQ - heightDiffOQ*heightDiffOQ);
+	float distPQproj = sqrt(distPQ*distPQ - heightDiffPQ*heightDiffPQ);
 
 	//law of cosines:
-	float angleQOP = acos((distOP*distOP + distOQ*distOQ - distPQ*distPQ)/(2*distOP*distOQ));
+	float angleQOP = acos((distOPproj*distOPproj + distOQproj*distOQproj - distPQproj*distPQproj)/(2*distOPproj*distOQproj));
 	float angleQOY = M_PI/2 - angleQOP;
 
 	lineAttachment[0][0] = 0;
@@ -32,12 +33,12 @@ void initKinematics(void){
 	lineAttachment[0][2] = heightO;
 
 	lineAttachment[1][0] = 0;
-	lineAttachment[1][1] = distOP;
-	lineAttachment[1][2] = heightO;
+	lineAttachment[1][1] = distOPproj;
+	lineAttachment[1][2] = heightP;
 
-	lineAttachment[2][0] = sin(angleQOY)*distOQ;
-	lineAttachment[2][1] = cos(distOQ)*distOQ;
-	lineAttachment[2][2] = heightO;
+	lineAttachment[2][0] = sin(angleQOY)*distOQproj;
+	lineAttachment[2][1] = cos(angleQOY)*distOQproj;
+	lineAttachment[2][2] = heightQ;
 }
 
 /*

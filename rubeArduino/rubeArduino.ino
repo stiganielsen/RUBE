@@ -13,17 +13,27 @@ float velLowpassTimeConstant = 0.05;
 
 //------ position controller ---------
 float waypointXYZ[3][2]; //TODO list of waypoints
+float waypointSpeed[2]= { 0.1, 0.1};
+float instantaneousXyzTarget[3];
 float speedTarget = 0.1; //m/s
 float maxAcc = 0.1;
 float posControllerP = 1;
 float posControllerI = 0;
 float posControllerD = 0;
 
+Controller controllerX = Controller(posControllerP, posControllerI, posControllerD);
+Controller controllerY = Controller(posControllerP, posControllerI, posControllerD);
+Controller controllerZ = Controller(posControllerP, posControllerI, posControllerD);
+
 //------ velocity controller ---------
 float xyzVelTarget[3]={0, 0, 0};
 float velControllerP = 1;
 float velControllerI = 0;
 float velControllerD = 0;
+
+Controller controllerXvel = Controller(velControllerP, velControllerI, velControllerD);
+Controller controllerYvel = Controller(velControllerP, velControllerI, velControllerD);
+Controller controllerZvel = Controller(velControllerP, velControllerI, velControllerD);
 
 // force calculations
 float mass = 2; //kg
@@ -34,7 +44,7 @@ float motorKv = 4000; //rpm/Volt
 float motorKt = 9.5/motorKv; //Nm/A
 float motorR = 0.1; //Ohm
 float batteryVoltage = 12; //Volt
-float motorPwm[3];
+float motorPwm[3]; // 0 to 1
 
 //Controller controllerA = Controller(0);
 //Controller controllerB = Controller(1);
@@ -45,10 +55,10 @@ Encoder encB(30,27);
 Encoder encC(26,31);
 float lengthPerEncStep = 0.001;
 
-//PID variables
-float Pu =2;
-float Iu =1;
-float Du =0.5;
+////PID variables
+//float Pu =2;
+//float Iu =1;
+//float Du =0.5;
 
 //int cnt=0;
 int speakerPin = 24;
@@ -59,8 +69,6 @@ int speakerPin = 24;
 #define vectorDotProduct(a,b, result) result[0]= a[0]*b[0]; result[1]= a[1]*b[1]; result[2]= a[2]*b[2]
 #define vectorScalarMultiplication(scalar,vector, result) result[0]= scalar*vector[0]; result[1]= scalar*vector[1]; result[2]= scalar*vector[2]
 
-
-
 void setup(){
 	pinMode(speakerPin,OUTPUT); //init speaker
 	initButtons();
@@ -70,12 +78,7 @@ void setup(){
 
 	soundStart();
 
-
-	//TODO cascade PID with outer = position control, inner = force control
-	//TODO compensate for gravity
-	//TODO compensate for friction instead of separate PID controllers for different directions
-	//TODO make communication based on github-repo instead of standard write/read
-	//TODO wrap tones + delays in "happy tone", "finished tone", "error tone" etc sound-functions
+	//TODO make communication event based using github-repo instead of standard write/read
 	//TODO calibrate OPQ from given rubeXyz, measured line-angles
 	//TODO estimate payload weight
 	//TODO multiple ways of calibrating?
@@ -102,13 +105,12 @@ void setup(){
 	}
 	stopMotors();
 
-//	//DISTANCES TO RUBE                                        (y)    Q
+//	//DISTANCES TO RUBE
 //	float distOR =2600;//20750;
 //	float distPR =2870;//16450; //1444 er højden fra gulv sjuss
 //	float distQR =2456;//21520;
 	//TODO calibrate xyz with distance sensor
 	//assuming rube is centered and on the floor, find average x and y of lineAttachements
-	float xyzRubeInit[3] = {};
 	xyzRube[0] = (lineAttachment[0][0] + lineAttachment[1][0] + lineAttachment[2][0])/3;
 	xyzRube[1] = (lineAttachment[0][1] + lineAttachment[1][1] + lineAttachment[2][1])/3;
 	xyzRube[2] = 0;
@@ -118,6 +120,15 @@ void setup(){
 	encA.write(lineLength[0]);
 	encB.write(lineLength[1]);
 	encC.write(lineLength[2]);
+
+	waypointXYZ[0][0] = xyzRube[0];
+	waypointXYZ[1][0] = xyzRube[1];
+	waypointXYZ[2][0] = xyzRube[2];
+
+	waypointXYZ[0][1] = xyzRube[0];
+	waypointXYZ[1][1] = xyzRube[1];
+	waypointXYZ[2][1] = xyzRube[2] + 100;
+
 
 	printState();
 }
@@ -136,11 +147,12 @@ void printState(void){
 void loop(){
 	uint32_t loopStart = millis();
 	float timeStep = 0.001*(loopStart - lastLoopStart);
+	//TODO moving average filter
 	float alpha = timeStep/(velLowpassTimeConstant + timeStep); //https://en.wikipedia.org/wiki/Low-pass_filter#Simple_infinite_impulse_response_filter
 
 	//find xyzRube
 	float lastLineLength[] = {lineLength[0],lineLength[1],lineLength[2]};
-	lineLength[0] = lengthPerEncStep * encA.read(); //probably starts in 0;
+	lineLength[0] = lengthPerEncStep * encA.read();
 	lineLength[1] = lengthPerEncStep * encB.read();
 	lineLength[2] = lengthPerEncStep * encC.read();
 
@@ -155,17 +167,72 @@ void loop(){
 		xyzVelRube[j] = (1-alpha)*xyzVelRube[j] + alpha*(xyzRube[j] - lastXyzRube[j])/timeStep;
 	}
 
+	//------ generate instantaneous position target ---------
+	//TODO parse waypoints
+
+	float instantaneousXyz2nextWP[3];
+	for( int j = 0; j < 3 ; ++j){//for xyz
+		instantaneousXyz2nextWP[j] = waypointXYZ[j][0] - instantaneousXyzTarget[j];
+	}
+	float distToNextWP = norm(instantaneousXyz2nextWP);
+
+	//time required to accelerate to :
+	float WPtransitionVel = 0;//average vel between current and next wp
+
+	float timeToAccelerate;
+	float distanceToAccelerate;
+	if (speedTarget > WPtransitionVel){//need to brake before wp
+		timeToAccelerate = (speedTarget - WPtransitionVel)/maxAcc;
+
+		//distance required to accelerate to WPtransitionVel:
+		distanceToAccelerate = speedTarget*timeToAccelerate - maxAcc*timeToAccelerate*timeToAccelerate/2;//TODO check signs
+	}else{//need to accelerate before wp
+		timeToAccelerate = (WPtransitionVel - speedTarget)/maxAcc;
+
+		//distance required to accelerate to WPtransitionVel:
+		distanceToAccelerate = speedTarget*timeToAccelerate + maxAcc*timeToAccelerate*timeToAccelerate/2;//TODO check signs
+	}
+
+	//integrate speedTarget
+	if (distanceToAccelerate < (distToNextWP - timeStep*speedTarget)){// not close to next waypoint
+		speedTarget+= timeStep*maxAcc;
+		if(speedTarget > waypointSpeed[1]) speedTarget = waypointSpeed[1];
+	}else{ // close to next waypoint
+		if(speedTarget > WPtransitionVel){
+			speedTarget-=timeStep*maxAcc;
+		}else{
+			speedTarget+=timeStep*maxAcc;
+		}
+	}
+
+	if (distToNextWP > timeStep*speedTarget){
+		for( int j = 0; j < 3 ; ++j){//for xyz
+			//integrate instantaneousXyzTarget
+			instantaneousXyzTarget[j] = instantaneousXyzTarget[j] + timeStep*speedTarget*instantaneousXyz2nextWP[j]/distToNextWP;
+		}
+	}else{
+		for( int j = 0; j < 3 ; ++j){//for xyz
+			instantaneousXyzTarget[j] = waypointXYZ[j][0];
+		}
+		//TODO increment active WP index
+	}
+
 	//------ position controller ---------
-	//TODO parse waypoints G0 and G1 g-code
-	//generate xyzTarget from a "linear combination" of start and end waypoints,
-//	//find posError
-//	float xyzError[3];
-//	float xyzTarget[3]; // find by integrating xyzVelTarget or
-//	vectorSubtract(xyzTarget,xyzRube, xyzError);
-//
-//	//find velTarget
-//	//TODO integrate max acceleration up untill max speed
-//
+
+	//find posError
+	float xyzError[3];
+	vectorSubtract(instantaneousXyzTarget,xyzRube, xyzError);
+
+	//find velTarget
+	controllerX.update(xyzError[0], timeStep);
+	controllerY.update(xyzError[1], timeStep);
+	controllerZ.update(xyzError[2], timeStep);
+
+	xyzVelTarget[0] = controllerX.output;
+	xyzVelTarget[1] = controllerY.output;
+	xyzVelTarget[2] = controllerZ.output;
+
+	//cascade PID with outer = position control, inner = velocity control
 	//------ velocity controller ---------
 	float xyzForce[3];
 	float lineForce[3];
@@ -192,7 +259,6 @@ void loop(){
 		}
 
 		float motorTorque;
-
 		//lineForce = motorTorque*spoolRadius - frictionForce
 		if (lineVelRube[i] > 0){
 			motorTorque= (lineForce[i] + frictionForce)/spoolRadius[i];

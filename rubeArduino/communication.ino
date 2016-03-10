@@ -47,11 +47,11 @@ void sendBuffer(void){
 	stringToSend+= ",";
 	stringToSend+= int(posNow[2]/2);
 	stringToSend+= ",";
-	stringToSend+= controllerA.Output;//[9]
+	stringToSend+= controllerA.output;//[9]
 	stringToSend+= ",";
-	stringToSend+= controllerB.Output;
+	stringToSend+= controllerB.output;
 	stringToSend+= ",";
-	stringToSend+= controllerC.Output;
+	stringToSend+= controllerC.output;
 	stringToSend+= ",";
 	if(isButtonAPressed()) stringToSend+=2 ;
 	else stringToSend+=1;

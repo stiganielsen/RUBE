@@ -7,7 +7,7 @@ non-buffered:
 	actions:
 		"help": show this API
 		"status": request rube to send current status, including: * battery voltage, 
-			  *xyz coordinates, *linelengths
+			  *xyz coordinates, *linelengths, *loopFrequency, *input-output-latency
 		"E": emergency stop! clear buffered waypoints, turn off motors(rube will 
 		     fall to the ground)
 		"S": stop what you are doing and maintain your current position
@@ -35,6 +35,9 @@ buffered actions:
 				  at speed S mm/s, rough precision (used where it's 
 				  important to maintain velocity rather than reaching a
 				  certain point, such as an arc made of multiple waypoints).
+				  MUST BE FOLLOWED BY A Cf OR Cr COMMAND! if you make a series
+				  of Cr commands, finish with a Cf command before using pause
+				  or tools
 	"P T123": pause for T ms.
 	"Gr 1": activate/close gripper/tool
 	"Gr 0": deactivate/open gripper/tool

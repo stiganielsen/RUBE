@@ -1,7 +1,7 @@
 #include "Controller.h"
 #include <Encoder.h>
 
-//long posNow[]={0,0,0};
+extern float lineAttachment[3][3];
 float lineLength[3];
 float lineVelRube[3];
 float xyzRube[3];
@@ -130,18 +130,18 @@ void setup(){
 	waypointXYZ[2][1] = xyzRube[2] + 100;
 
 
-	printState();
+//	printState();
 }
 
-void printState(void){
-	Serial.print("rube X:"); Serial.print(xyzRube[0]);
-	Serial.print(" Y:"); Serial.print(xyzRube[1]);
-	Serial.print(" Z:"); Serial.println(xyzRube[2]);
-
-	Serial.print("line A:"); Serial.print(lineLength[0]);
-	Serial.print(" B:"); Serial.print(lineLength[1]);
-	Serial.print(" C:"); Serial.println(lineLength[2]);
-}
+//void printState(void){
+//	wirelessSerial.print("rube X:"); wirelessSerial.print(xyzRube[0]);
+//	wirelessSerial.print(" Y:"); wirelessSerial.print(xyzRube[1]);
+//	wirelessSerial.print(" Z:"); wirelessSerial.println(xyzRube[2]);
+//
+//	wirelessSerial.print("line A:"); wirelessSerial.print(lineLength[0]);
+//	wirelessSerial.print(" B:"); wirelessSerial.print(lineLength[1]);
+//	wirelessSerial.print(" C:"); wirelessSerial.println(lineLength[2]);
+//}
 
 
 void loop(){
@@ -278,24 +278,7 @@ void loop(){
 	}
 
 	setMotorPwms(motorPwm);
-
-	/*
-	controllerA.Compute(lineLengths[0]*2, posNow);
-	controllerB.Compute(lineLengths[1]*2, posNow);
-	controllerC.Compute(lineLengths[2]*2, posNow);
-
-	if( isButtonAPressed() && isButtonBPressed() && isButtonCPressed()){
-		setMotorPwms(controllerA.Output, controllerB.Output, controllerC.Output);
-	}
-	else{
-		setMotorPwms(0, 0, 0);
-	}
-
-	if (cnt==200){
-		cnt=0;
-		sendBuffer();
-	}
-	cnt++;*/
+	parseCommands();
 
 	lastLoopStart = loopStart;
 }

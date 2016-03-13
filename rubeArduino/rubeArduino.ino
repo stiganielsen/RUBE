@@ -46,21 +46,11 @@ float motorR = 0.1; //Ohm
 float batteryVoltage = 12; //Volt
 float motorPwm[3]; // 0 to 1
 
-//Controller controllerA = Controller(0);
-//Controller controllerB = Controller(1);
-//Controller controllerC = Controller(2);
-
 Encoder encA(29,28);
 Encoder encB(30,27);
 Encoder encC(26,31);
 float lengthPerEncStep = 0.001;
 
-////PID variables
-//float Pu =2;
-//float Iu =1;
-//float Du =0.5;
-
-//int cnt=0;
 int speakerPin = 24;
 
 //vector math
@@ -78,7 +68,6 @@ void setup(){
 
 	soundStart();
 
-	//TODO make communication event based using github-repo instead of standard write/read
 	//TODO calibrate OPQ from given rubeXyz, measured line-angles
 	//TODO estimate payload weight
 	//TODO multiple ways of calibrating?
@@ -128,21 +117,7 @@ void setup(){
 	waypointXYZ[0][1] = xyzRube[0];
 	waypointXYZ[1][1] = xyzRube[1];
 	waypointXYZ[2][1] = xyzRube[2] + 100;
-
-
-//	printState();
 }
-
-//void printState(void){
-//	wirelessSerial.print("rube X:"); wirelessSerial.print(xyzRube[0]);
-//	wirelessSerial.print(" Y:"); wirelessSerial.print(xyzRube[1]);
-//	wirelessSerial.print(" Z:"); wirelessSerial.println(xyzRube[2]);
-//
-//	wirelessSerial.print("line A:"); wirelessSerial.print(lineLength[0]);
-//	wirelessSerial.print(" B:"); wirelessSerial.print(lineLength[1]);
-//	wirelessSerial.print(" C:"); wirelessSerial.println(lineLength[2]);
-//}
-
 
 void loop(){
 	uint32_t loopStart = millis();
@@ -282,20 +257,3 @@ void loop(){
 
 	lastLoopStart = loopStart;
 }
-
-//void  setAllPIDs(){
-//	controllerA.SetTuningsUp(Pu,Iu,Du);
-//	controllerB.SetTuningsUp(Pu,Iu,Du);
-//	controllerC.SetTuningsUp(Pu,Iu,Du);
-//
-//	controllerA.SetTuningsDown(Pd,Id,Dd);
-//	controllerB.SetTuningsDown(Pd,Id,Dd);
-//	controllerC.SetTuningsDown(Pd,Id,Dd);
-//
-//	controllerA.SetOutputLimits(55,-5);
-//	controllerB.SetOutputLimits(55,-5);
-//	controllerC.SetOutputLimits(55,-5);
-//	controllerA.SetSampleTime(10);
-//	controllerB.SetSampleTime(10);
-//	controllerC.SetSampleTime(10);
-//}

@@ -60,7 +60,8 @@ void parseCommands(){
 //		    float tempFloat = parseWrittenFloat((char*)tempBuffer,(char**) &tempBuffer);
 //		    HWSERIAL.println(tempFloat);
 		}else if (isCharArrayAinBeginningOfB(statusCharArray, tempBuffer, &i)){
-			HWSERIAL.println("2");
+//			HWSERIAL.println("2");
+			printStatus();
 //			TODO status
 		}else if (isCharArrayAinBeginningOfB(emergencyStopCharArray,tempBuffer, &i)){
 			HWSERIAL.println("3");
@@ -120,6 +121,16 @@ void parseCommands(){
 		inBufferIsFilled = false;
 		inBufferedChars = 0;
 	}
+}
+
+void printStatus(void){
+	HWSERIAL.print("rube X:"); HWSERIAL.print(xyzRube[0]);
+	HWSERIAL.print(" Y:"); HWSERIAL.print(xyzRube[1]);
+	HWSERIAL.print(" Z:"); HWSERIAL.println(xyzRube[2]);
+
+	HWSERIAL.print("line A:"); HWSERIAL.print(lineLength[0]);
+	HWSERIAL.print(" B:"); HWSERIAL.print(lineLength[1]);
+	HWSERIAL.print(" C:"); HWSERIAL.println(lineLength[2]);
 }
 
 /*

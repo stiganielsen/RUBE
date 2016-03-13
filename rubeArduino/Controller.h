@@ -13,19 +13,14 @@
 
 class Controller {
 public:
-	int M; // a variable
-	unsigned long lastTime;
-	double Input;
 	double output;
-	double Setpoint;
-	double ITerm, lastInput;
 	float lastError;
+	float iTerm;
 	float iTermMax;
 	float iTermMin;
-	double kp, ki, kd, kup, kui, kud, kdp, kdi, kdd;
-	int SampleTime = 20; //1 sec
-	double outMin, outMax;
-	Controller(int motor);
+	float kp, ki, kd;
+	float outMin, outMax;
+	Controller(float P, float I, float D);
 	//void setAllControllers(Controller* controllers, float Pu, float Iu, float Du, float Pd, float Id, float Dd);
 //	void Compute(int SetPt, long* posNow);
 	void update(float error, float timeStep);

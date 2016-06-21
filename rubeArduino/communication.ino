@@ -11,8 +11,10 @@ volatile boolean inBufferIsFilled=false;
 volatile int inBufferedChars = 0;
 volatile boolean lineIsComment = false;
 
+extern int state;
+extern uint8_t pwmPin[];
 void initCommunication(void){
-	HWSERIAL.begin(9600);
+	HWSERIAL.begin(115200);
 	HWSERIAL.println("Welcome to RUBE! To get help, write 'help'");
 }
 
@@ -26,6 +28,8 @@ void parseCommands(){
 		char resetWPsCharArray[] = 		"resetWPs";
 		char velCartesianCharArray[] = 	"velCartesian";
 		char velLinesCharArray[] = 		"velLines";
+		char tensionCharArray[] = 		"tension";
+		char antiGravityCharArray[] = 	"float";
 
 		char calLengthsCharArray[] = 	"calLengths";
 		char calAccCharArray[] = 		"calAcc";
@@ -40,7 +44,7 @@ void parseCommands(){
 		char bufFanCharArray[] = 		"bufFan";
 
 		//copy content of inBuffer to another location
-		int i = 0; //pointing to "active" character
+		volatile int i = 0; //pointing to "active" character
 		char tempBuffer[IN_BUFFER_SIZE];
 		while(inBuffer[i] != 0){
 			tempBuffer[i] = inBuffer[i];
@@ -53,22 +57,28 @@ void parseCommands(){
 //		printChars(tempBuffer+i);
 		if (isCharArrayAinBeginningOfB(helpCharArray, tempBuffer, &i)){
 			HWSERIAL.println("here is some help :)");
-			printChars(tempBuffer+i);
-//			//TODO help
-//			HWSERIAL.println(helpCharArray[0]);
-//			HWSERIAL.println(inBuffer[0]);
-//		    float tempFloat = parseWrittenFloat((char*)tempBuffer,(char**) &tempBuffer);
-//		    HWSERIAL.println(tempFloat);
+			//TODO help
+			setMotorPwm(0,1);
+			analogWrite(pwmPin[0], 255);
+			setMotorPwm(1,1);
+			analogWrite(pwmPin[1], 255);
+			setMotorPwm(2,1);
+			analogWrite(pwmPin[2], 255);
+			delay(5000);
+			stopMotors();
+
 		}else if (isCharArrayAinBeginningOfB(statusCharArray, tempBuffer, &i)){
 //			HWSERIAL.println("2");
 			printStatus();
 //			TODO status
 		}else if (isCharArrayAinBeginningOfB(emergencyStopCharArray,tempBuffer, &i)){
-			HWSERIAL.println("3");
-			//TODO emergency stop
+			HWSERIAL.println("emergencyStopped");
+			state = 0;
+			stopMotors();
 		}else if (isCharArrayAinBeginningOfB(stopCharArray,tempBuffer, &i)){
 			HWSERIAL.println("4");
-			//TODO stop
+			state= 2;
+			//todo allow continued parsing of wps
 		}else if (isCharArrayAinBeginningOfB(continueCharArray,tempBuffer, &i)){
 			HWSERIAL.println("5");
 			//TODO continue
@@ -76,11 +86,46 @@ void parseCommands(){
 			HWSERIAL.println("6");
 			//TODO reset wps
 		}else if (isCharArrayAinBeginningOfB(velCartesianCharArray,tempBuffer, &i)){
-			HWSERIAL.println("7");
-			//TODO velCartesian
+			HWSERIAL.println("velCartesian");
+			//"velCartesian X123 Y123 Z123 T123"
+			char tempChars0[] = "x";
+			char tempChars1[] = "y";
+			char tempChars2[] = "z";
+			char tempChars3[] = "t";
+
+
+			if(isCharArrayAinBeginningOfB(tempChars0,tempBuffer, &i)){
+				xyzVelTarget[0] = parseWrittenFloat(tempBuffer, &i);
+			}else{
+				xyzVelTarget[0] = 0;
+			}
+
+			if(isCharArrayAinBeginningOfB(tempChars1,tempBuffer, &i)){
+				xyzVelTarget[1] = parseWrittenFloat(tempBuffer, &i);
+			}else{
+				xyzVelTarget[1] = 0;
+			}
+
+			if(isCharArrayAinBeginningOfB(tempChars2,tempBuffer, &i)){
+				xyzVelTarget[2] = parseWrittenFloat(tempBuffer, &i);
+			}else{
+				xyzVelTarget[2] = 0;
+			}
+
+			if(isCharArrayAinBeginningOfB(tempChars3,tempBuffer, &i)){
+				actionStopTime = millis() + parseWrittenFloat(tempBuffer, &i);
+			}else{
+				actionStopTime = millis() + 1000;
+			}
+
+			state = 4;
 		}else if (isCharArrayAinBeginningOfB(velLinesCharArray,tempBuffer, &i)){
 			HWSERIAL.println("8");
 			//TODO velLines
+		}else if (isCharArrayAinBeginningOfB(tensionCharArray,tempBuffer, &i)){
+			state = 1;
+		}else if (isCharArrayAinBeginningOfB(antiGravityCharArray,tempBuffer, &i)){
+			state = 8;
 		}else if (isCharArrayAinBeginningOfB(calLengthsCharArray,tempBuffer, &i)){
 			HWSERIAL.println("9");
 			//TODO calLengths
@@ -124,13 +169,38 @@ void parseCommands(){
 }
 
 void printStatus(void){
-	HWSERIAL.print("rube X:"); HWSERIAL.print(xyzRube[0]);
-	HWSERIAL.print(" Y:"); HWSERIAL.print(xyzRube[1]);
-	HWSERIAL.print(" Z:"); HWSERIAL.println(xyzRube[2]);
+	HWSERIAL.print("pwms A:    "); HWSERIAL.print(motorPwm[0],3);
+	HWSERIAL.print("     B:    "); HWSERIAL.print(motorPwm[1],3);
+	HWSERIAL.print("     C:    "); HWSERIAL.println(motorPwm[2],3);
 
-	HWSERIAL.print("line A:"); HWSERIAL.print(lineLength[0]);
-	HWSERIAL.print(" B:"); HWSERIAL.print(lineLength[1]);
-	HWSERIAL.print(" C:"); HWSERIAL.println(lineLength[2]);
+	HWSERIAL.print("rube X:    "); HWSERIAL.print(xyzRube[0],3);
+	HWSERIAL.print("     Y:    "); HWSERIAL.print(xyzRube[1],3);
+	HWSERIAL.print("     Z:    "); HWSERIAL.println(xyzRube[2],3);
+
+	HWSERIAL.print("rube Xvel: "); HWSERIAL.print(xyzVelRube[0],3);
+	HWSERIAL.print("     Yvel: "); HWSERIAL.print(xyzVelRube[1],3);
+	HWSERIAL.print("     Zvel: "); HWSERIAL.println(xyzVelRube[2],3);
+
+	HWSERIAL.print("line A:    "); HWSERIAL.print(lineLength[0],3);
+	HWSERIAL.print("     B:    "); HWSERIAL.print(lineLength[1],3);
+	HWSERIAL.print("     C:    "); HWSERIAL.println(lineLength[2],3);
+
+	HWSERIAL.print("line Avel: "); HWSERIAL.print(lineVelRube[0],3);
+	HWSERIAL.print("     Bvel: "); HWSERIAL.print(lineVelRube[1],3);
+	HWSERIAL.print("     Cvel: "); HWSERIAL.println(lineVelRube[2],3);
+
+	HWSERIAL.println("attachments:");
+	HWSERIAL.print("Ox: "); HWSERIAL.print(lineAttachment[0][0],3);
+	HWSERIAL.print(" Oy: "); HWSERIAL.print(lineAttachment[0][1],3);
+	HWSERIAL.print(" Oz: "); HWSERIAL.println(lineAttachment[0][2],3);
+
+	HWSERIAL.print("Px: "); HWSERIAL.print(lineAttachment[1][0],3);
+	HWSERIAL.print(" Py: "); HWSERIAL.print(lineAttachment[1][1],3);
+	HWSERIAL.print(" Pz: "); HWSERIAL.println(lineAttachment[1][2],3);
+
+	HWSERIAL.print("Qx: "); HWSERIAL.print(lineAttachment[2][0],3);
+	HWSERIAL.print(" Qy: "); HWSERIAL.print(lineAttachment[2][1],3);
+	HWSERIAL.print(" Qz: "); HWSERIAL.println(lineAttachment[2][2],3);
 }
 
 /*
@@ -141,35 +211,33 @@ void printStatus(void){
  * -3
  * -34389.334
  */
-float parseWrittenFloat(char* buf, char** remainingBuf){
+float parseWrittenFloat(char* buf, int volatile * volatile iPtr){
 	boolean done = false;
 	boolean positive = true;
 	int decimalPlace = -1; //if -1, not found yet
-	int i = 0;
-	if (buf[i]== '-'){ // sign
+	if (buf[*iPtr]== '-'){ // sign
 		positive = false;
-		++i;
+		++*iPtr;
 	}
 	float result = 0;
 	while(!done){
-		HWSERIAL.print(buf[i]);
 		//'0' -> 48
 		//'9' -> 57
-		if ((buf[i] >= 48) && (buf[i] <= 57)){//integer
-			int temp = buf[i] - 48;
+		if ((buf[*iPtr] >= 48) && (buf[*iPtr] <= 57)){//integer
+			int temp = buf[*iPtr] - 48;
 			result = result*10 + (float)temp;
-		}else if((buf[i]== '.') || buf[i]== ','){//decimals
+		}else if((buf[*iPtr]== '.') || buf[*iPtr]== ','){//decimals
 			//TODO only allow one decimal in a number
-			decimalPlace = i;
+			decimalPlace = *iPtr;
 
 		}else{//end of number
 			done=true;
-			*remainingBuf = buf + i;
 		}
-		i++;
+		*iPtr = *iPtr + 1;
 	}
+	*iPtr = *iPtr - 1;
 	if (decimalPlace != -1){
-		for(int j = 0; j < (i - 1 - decimalPlace); j++){
+		for(int j = 0; j < (*iPtr - 1 - decimalPlace); j++){
 			result= 0.1*result;
 		}
 	}
@@ -183,7 +251,7 @@ float parseWrittenFloat(char* buf, char** remainingBuf){
  *  both strings must be null-terminated
  *  returning c =  array b with a removed
  */
-boolean isCharArrayAinBeginningOfB(char* a, char* b, int* iPtr){
+boolean isCharArrayAinBeginningOfB(char* a, char* b, int volatile * volatile iPtr){
 	int j = 0;
 	while(true){
 		if (a[j] == 0){//end of string

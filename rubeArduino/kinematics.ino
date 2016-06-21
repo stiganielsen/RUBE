@@ -55,7 +55,8 @@ void xyzForce2lineForce(float* xyzRube, float* xyzForce, float* resultVector){
  * xyzVel = lineVel2xyzVelMatrix * lineVel
  * xyzAcc = lineVel2xyzVelMatrix * lineAcc
  */
-void deltaLineDeltaXyz(float* xyzRube, float* dLengthDt, float* resultVector){
+void deltaLineDeltaXyz(float* xyzRube, float* dLengthDt, volatile float * volatile resultVector){
+//	trashVariable = *resultVector;//to prevent it from being optimized away
 
 }
 
@@ -65,7 +66,7 @@ void deltaLineDeltaXyz(float* xyzRube, float* dLengthDt, float* resultVector){
  * lineVel = xyzVel2lineVelMatrix *  xyzVel
  * lineAcc = xyzVel2lineVelMatrix *  xyzAcc
  */
-void deltaXyzDeltaLine(float* xyzRube, float* dXyzDt, float* resultVector){
+void deltaXyzDeltaLine(float* xyzRube, float* dXyzDt, volatile float * volatile resultVector){
 	float line[3];
 
 	//calculate new matrix  TODO: only if necessary
@@ -84,29 +85,35 @@ void deltaXyzDeltaLine(float* xyzRube, float* dXyzDt, float* resultVector){
 
 	//find lineVels
 	for( int i = 0; i < 3 ; ++i){ // for each line
+		resultVector[i] = 0;
 		for( int j = 0; j < 3 ; ++j){//for xyz
 			resultVector[i] = resultVector[i] + deltaXyzDeltaLineMatrix[i][j]*dXyzDt[j];
+			HWSERIAL.println(deltaXyzDeltaLineMatrix[i][j]*dXyzDt[j]);
+			HWSERIAL.println(resultVector[i]);
 		}
+
 	}
+	HWSERIAL.println("");
+
 }
 
-void xyzRube2line(float* xyzRube,  float* resultVector){
+void xyzRube2line(float* xyzRube, volatile float * volatile resultVector){
 	float xyzLine[3];
 	for( int i = 0; i < 3 ; ++i){ // for each line
 		for( int j = 0; j < 3 ; ++j){//for xyz
 			xyzLine[j] = lineAttachment[i][j] - xyzRube[j];
 		}
-		resultVector[i] = norm(xyzLine);
+		resultVector[i] = norm((float*)xyzLine);
 	}
 }
 
-void line2xyzRube(float* lineLength,  float* resultVector){
+void line2xyzRube(float* lineLength, volatile float * volatile resultVector){
 	float lineAttachment1Temp[3] = {lineAttachment[0][0],lineAttachment[0][1],lineAttachment[0][2]};
 	float lineAttachment2Temp[3] = {lineAttachment[1][0],lineAttachment[1][1],lineAttachment[1][2]};
 	float lineAttachment3Temp[3] = {lineAttachment[2][0],lineAttachment[2][1],lineAttachment[2][2]};
 
-	float xyzRubePossibility1[3];
-	float xyzRubePossibility2[3];
+	volatile float xyzRubePossibility1[3];
+	volatile float xyzRubePossibility2[3];
 
 	threeCirclesIntersection(lineAttachment1Temp, lineAttachment2Temp, lineAttachment3Temp, lineLength[0], lineLength[1], lineLength[2], xyzRubePossibility1, xyzRubePossibility2);
 	if (xyzRubePossibility1[2] < xyzRubePossibility2[2]){
@@ -126,7 +133,7 @@ void line2xyzRube(float* lineLength,  float* resultVector){
  * http://stackoverflow.com/questions/1406375/finding-intersection-points-between-3-spheres
  * returns the two intersections points in resultVector1 & resultVector2
  */
-int threeCirclesIntersection(float* A, float* B, float* C, float r1, float r2, float r3, float* resultVector1, float* resultVector2){
+int threeCirclesIntersection(float* A, float* B, float* C, float r1, float r2, float r3,  volatile float * volatile resultVector1,  volatile float * volatile resultVector2){
 	float AB[3];
 	float e_x[3];
 	float CA[3];
@@ -162,13 +169,12 @@ int threeCirclesIntersection(float* A, float* B, float* C, float r1, float r2, f
 
 	crossProduct(e_x,e_y, e_z);
 
-	float d = norm(AB);
-
 	float j = dotProduct(e_y,CA);
 
-	float x = (r1*r1 - r2*r2 + d*d) / (2*d);
+	float x = (r1*r1 - r2*r2 + absAB*absAB) / (2*absAB);
 	float y = (r1*r1 - r3*r3 -2*i*x + i*i + j*j) / (2*j);
 	float temp4 = r1*r1 - x*x - y*y;
+
 	if (temp4 < 0){
 		return 1; //The three spheres do not intersect!
 	}else{
@@ -184,16 +190,16 @@ int threeCirclesIntersection(float* A, float* B, float* C, float r1, float r2, f
 	}
 }
 
-float norm(float* a){
-	return sqrt(a[1]*a[1] + a[2]*a[2] + a[3]*a[3]);
+float norm(volatile float * volatile a){
+	return sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]);
 }
 
 float dotProduct(float* a, float* b){
-	return a[1]*b[1] + a[2]*b[2] + a[3]*b[3];
+	return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
 }
 
-void crossProduct(float* a, float* b, float* resultVector){
-	resultVector[1] = a[2]*b[3]-a[3]*b[2];
-	resultVector[2] = a[3]*b[1]-a[1]*b[3];
-	resultVector[3] = a[1]*b[2]-a[2]*b[1];
+void crossProduct(float* a, float* b,  volatile float * volatile resultVector){
+	resultVector[0] = a[1]*b[2]-a[2]*b[1];
+	resultVector[1] = a[2]*b[0]-a[0]*b[2];
+	resultVector[2] = a[0]*b[1]-a[1]*b[0];
 }

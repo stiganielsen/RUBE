@@ -11,6 +11,7 @@ int pwmPinC=5;
 int directionPin1C=12;
 int directionPin2C=11;
 
+int stdbyPinABCD = 15;
 uint8_t pwmPin[] = {3,4,5};
 uint8_t directionPin1[] = {8, 10, 12};
 uint8_t directionPin2[] = {7, 9, 11};
@@ -34,6 +35,12 @@ void initMotors(void){
 }
 
 void setMotorPwm(int motorIndex, float motorPwm){
+	if (motorPwm > 1){
+		motorPwm = 1;
+	}else if(motorPwm < -1){
+		motorPwm = -1;
+	}
+
 	if (motorPwm*lastPwm[motorIndex] > 0){
 		//keep going in same direction, so nothing to do
 	}else if (motorPwm==0) {

@@ -2,13 +2,13 @@
 
 // -------- measured values --------
 //HEIGHT(s)
-float heightO=3166;//16000;
-float heightP = 3166;
-float heightQ = 3166;
+float heightO=3.166;//16000;
+float heightP = 3.166;
+float heightQ = 3.166;
 //DISTANCES BETWEEN TOP PTS
-float distOP= 3850;//ljusg15570;//crf628;//origo -> første  (o) O------P  (x)
-float distPQ= 3752;//ljusg15980;//crf600;//første til anden      \  R /
-float distOQ= 3300;//ljusg25640;//crf437;//anden til origo         \  /
+float distOP= 7.514;//makelab, 3.850;//ljusg15570;//crf628;//origo -> første  (o) O------P  (x)
+float distPQ= 6.847;//makelab, 3.752;//ljusg15980;//crf600;//første til anden      \  R /
+float distOQ= 5.992;//makelab, 3.300;//ljusg25640;//crf437;//anden til origo         \  /
 // 						                                           (y)    Q
 
 // -------- constants and variables generated during runtime --------

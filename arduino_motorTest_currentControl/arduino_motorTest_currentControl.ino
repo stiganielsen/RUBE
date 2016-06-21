@@ -1,4 +1,10 @@
 #include "Arduino.h"
+#include <Encoder.h>
+
+Encoder encA(28,29);
+float lengthPerEncStep = 0.00033333333;
+float lineLength;
+float lineVelRube = 0;
 
 const int pin_feedbackA1 = 0;
 const int pin_feedbackA2 = 1;
@@ -147,11 +153,15 @@ void setup(){
 	initTimerInterupt();
 	sei();
 
+	lineLength = 0;
+	float temp = 1/lengthPerEncStep;
+	encA.write((int32_t)(temp*lineLength));
+
 	Serial.println("init done");
 }
 
 void loop(){
-//	delay(10);
+	delay(1);
 	uint32_t loopStart = millis();
 	timeStep = 0.001*(loopStart - lastLoopStart);
 	ramp+=tempdelta;
@@ -165,8 +175,18 @@ void loop(){
 	}
 //	val = ramp;
 
+	float lastLineLength = lineLength;
+	lineLength = lengthPerEncStep * encA.read();
+
+//	float velLowpassTimeConstant = 0.001;
+//	float alpha = timeStep/(velLowpassTimeConstant + timeStep); //https://en.wikipedia.org/wiki/Low-pass_filter#Simple_infinite_impulse_response_filter
+//	lineVelRube = (1-alpha)*lineVelRube + alpha*(lineLength - lastLineLength)/timeStep;
+	lineVelRube = 0.3*lineVelRube + 0.7*(lineLength - lastLineLength)/timeStep;
+
+
 	float ref = (1/(float)1023) * analogRead(pin_pot);
 	ref = 2*ref - 1;
+	float ref = -10*lineLength - 0.1*lineVelRube;
 	//	if(fabs(val) <0.05) val = 0;
 	float currentmilliAmpsMax = 500;
 	currentmilliAmpsRef = currentmilliAmpsMax*ref;
@@ -176,7 +196,7 @@ void loop(){
 //	delay(200);
 
 	if (loopStart > plotTime){
-		Serial.print("timeStep us: ");
+		Serial.print("timeStep ms: ");
 		Serial.print(1000*timeStep);
 		Serial.print(", ref: ");
 		Serial.print(currentmilliAmpsRef);
@@ -185,9 +205,13 @@ void loop(){
 		Serial.print(" integral: ");
 		Serial.print(currentmilliAmpsIntergral/motorPwmFreq);
 		Serial.print(", sending: ");
-		Serial.println(val);
-//		Serial.print(", sending: ");
-//		Serial.println(temptemp);
+		Serial.print(val);
+		Serial.print(", sending: ");
+		Serial.println(temptemp);
+		Serial.print(", lineLength: ");
+		Serial.print(lineLength);
+		Serial.print(", lineVel: ");
+		Serial.println(lineVelRube);
 		plotTime += 100;
 	}
 	lastLoopStart = loopStart;

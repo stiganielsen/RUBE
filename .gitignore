@@ -15,6 +15,10 @@ local.properties
 .classpath
 .settings/
 .loadpath
+*0.d
+*0
+*ino.cpp
+*spec.d
 
 # External tool builders
 .externalToolBuilders/
